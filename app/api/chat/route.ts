@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     const assistantName = process.env.PINECONE_ASSISTANT_NAME || serverSecrets.pineconeAssistantName
     const baseUrl = (process.env.PINECONE_BASE_URL || "https://prod-1-data.ke.pinecone.io").replace(/\/$/, "")
 
-    const url = `${baseUrl}/chat/${encodeURIComponent(assistantName)}`
+    const url = `${baseUrl}/assistant/chat/${encodeURIComponent(assistantName)}`
 
     const payload = {
       messages: [
@@ -29,6 +29,7 @@ export async function POST(request: NextRequest) {
 
     console.log("[v0] Attempting Pinecone request to:", url)
     console.log("[v0] Using assistant name:", assistantName)
+    console.log("[v0] Using base URL:", baseUrl)
 
     try {
       const response = await fetch(url, {
@@ -58,10 +59,10 @@ export async function POST(request: NextRequest) {
       }
 
       const data = await response.json()
-      console.log("[v0] Success response received")
+      console.log("[v0] Success response received:", JSON.stringify(data, null, 2))
 
-      // Extract the assistant's message from the response
-      const assistantContent = data?.message?.content || "Sin respuesta del asistente"
+      const assistantContent =
+        data?.message?.content || data?.choices?.[0]?.message?.content || "Sin respuesta del asistente"
 
       return NextResponse.json({
         message: assistantContent,
