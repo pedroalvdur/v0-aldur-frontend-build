@@ -11,39 +11,116 @@ export async function POST(request: NextRequest) {
 
     const apiKey = process.env.PINECONE_API_KEY || serverSecrets.pineconeApiKey
     const assistantName = process.env.PINECONE_ASSISTANT_NAME || serverSecrets.pineconeAssistantName
+    const assistantId = process.env.PINECONE_ASSISTANT_ID || ""
+    const baseUrl = (process.env.PINECONE_BASE_URL || "https://api.pinecone.io").replace(/\/$/, "")
 
     // Note: apiKey may come from serverSecrets fallback for quick testing
 
-    // Call Pinecone Assistants REST API (non-streaming)
-    const url = `https://api.pinecone.io/assistant/assistants/${encodeURIComponent(
-      assistantName,
-    )}/chat/completions`
+    // Try a few likely Pinecone Assistants REST endpoints (non-streaming)
+    const nameTargets = assistantName
+      ? [
+          `/assistant/assistants/${encodeURIComponent(assistantName)}/chat/completions`,
+          `/assistants/${encodeURIComponent(assistantName)}/chat/completions`,
+          `/assistant/v1/assistants/${encodeURIComponent(assistantName)}/chat/completions`,
+          `/v1/assistants/${encodeURIComponent(assistantName)}/chat/completions`,
+          `/assistant/assistants/${encodeURIComponent(assistantName)}/chat`,
+          `/assistants/${encodeURIComponent(assistantName)}/chat`,
+        ]
+      : []
 
-    const pcResponse = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Api-Key": apiKey,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        messages: [
-          {
-            role: "user",
-            content: message,
-          },
-        ],
-      }),
-    })
+    const idTargets = assistantId
+      ? [
+          `/assistant/assistants/${encodeURIComponent(assistantId)}/chat/completions`,
+          `/assistants/${encodeURIComponent(assistantId)}/chat/completions`,
+          `/assistant/v1/assistants/${encodeURIComponent(assistantId)}/chat/completions`,
+          `/v1/assistants/${encodeURIComponent(assistantId)}/chat/completions`,
+          `/assistant/assistants/${encodeURIComponent(assistantId)}/chat`,
+          `/assistants/${encodeURIComponent(assistantId)}/chat`,
+        ]
+      : []
 
-    if (!pcResponse.ok) {
-      const text = await pcResponse.text()
+    const candidateUrls = [...idTargets, ...nameTargets].map((p) => `${baseUrl}${p}`)
+
+    const payload = {
+      messages: [
+        {
+          role: "user",
+          content: message,
+        },
+      ],
+    }
+
+    const attemptResults: Array<{
+      url: string
+      status: number
+      body: string
+      auth: "api-key" | "bearer" | "x-pinecone" | "x-api-key"
+    }> = []
+    let data: any = null
+
+    for (const url of candidateUrls) {
+      // Try with Api-Key and with Authorization: Bearer to be safe
+      const headerVariants: Array<{
+        auth: "api-key" | "bearer" | "x-pinecone" | "x-api-key"
+        headers: Record<string, string>
+      }> = [
+        {
+          auth: "api-key",
+          headers: { "Api-Key": apiKey, "Content-Type": "application/json" },
+        },
+        {
+          auth: "bearer",
+          headers: { Authorization: `Bearer ${apiKey}` as string, "Content-Type": "application/json" },
+        },
+        {
+          auth: "x-pinecone",
+          headers: { "x-pinecone-api-key": apiKey, "Content-Type": "application/json" },
+        },
+        {
+          auth: "x-api-key",
+          headers: { "x-api-key": apiKey, "Content-Type": "application/json" },
+        },
+      ]
+
+      for (const hv of headerVariants) {
+        try {
+          const resp = await fetch(url, {
+            method: "POST",
+            headers: hv.headers,
+            body: JSON.stringify(payload),
+          })
+
+          if (resp.ok) {
+            data = await resp.json()
+            attemptResults.push({ url, status: resp.status, body: "OK", auth: hv.auth })
+            break
+          } else {
+            const body = await resp.text()
+            attemptResults.push({ url, status: resp.status, body: body.slice(0, 2000), auth: hv.auth })
+          }
+        } catch (err: any) {
+          attemptResults.push({ url, status: 0, body: String(err).slice(0, 1000), auth: hv.auth })
+        }
+      }
+
+      if (data) break
+    }
+
+    if (!data) {
       return NextResponse.json(
-        { error: "Error de Pinecone", status: pcResponse.status, details: text },
+        {
+          error: "Error de Pinecone",
+          note:
+            "Todas las URL candidatas fallaron. Revisa assistantName/assistantId, baseUrl, ruta del endpoint y permisos del API key.",
+          assistantName,
+          assistantId: assistantId || null,
+          baseUrl,
+          keySource: process.env.PINECONE_API_KEY ? "env" : "fallback",
+          attempts: attemptResults,
+        },
         { status: 502 },
       )
     }
-
-    const data = (await pcResponse.json()) as any
 
     // Try to normalize likely shapes
     const assistantContent =

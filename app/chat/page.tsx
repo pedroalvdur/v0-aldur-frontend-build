@@ -68,9 +68,30 @@ export default function ChatPage() {
       setMessages((prev) => [...prev, assistantMessage])
     } catch (error) {
       console.error("Chat error:", error)
+      let details = ""
+      if (error instanceof Error && error.message) {
+        try {
+          const parsed = JSON.parse(error.message)
+          const attempts = Array.isArray(parsed?.attempts) ? parsed.attempts : []
+          const first = attempts?.[0]
+          details = [
+            parsed?.note ? `Nota: ${parsed.note}` : "",
+            parsed?.assistantName ? `assistantName: ${parsed.assistantName}` : "",
+            parsed?.assistantId ? `assistantId: ${parsed.assistantId}` : "",
+            parsed?.baseUrl ? `baseUrl: ${parsed.baseUrl}` : "",
+            parsed?.keySource ? `keySource: ${parsed.keySource}` : "",
+            attempts?.length ? `intentos: ${attempts.length}` : "",
+            first ? `primer intento: {url: ${first.url}, auth: ${first.auth}, status: ${first.status}}` : "",
+          ]
+            .filter(Boolean)
+            .join("\n")
+        } catch (_) {
+          details = error.message?.slice(0, 1000)
+        }
+      }
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: "Ha ocurrido un error, inténtalo de nuevo",
+        content: `Ha ocurrido un error al consultar Pinecone.\n${details || "Revisa la consola para más información."}`,
         role: "assistant",
         timestamp: new Date(),
       }
