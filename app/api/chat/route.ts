@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { serverSecrets } from "@/lib/server-secrets"
 
 export async function POST(request: NextRequest) {
   try {
@@ -8,23 +9,53 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Mensaje requerido" }, { status: 400 })
     }
 
-    // TODO: Implement actual RAG chat logic here
-    // This would typically involve:
-    // 1. Processing the user message
-    // 2. Querying the RAG system/vector database
-    // 3. Generating a response using LLM
-    // 4. Returning the response (potentially streaming)
+    const apiKey = process.env.PINECONE_API_KEY || serverSecrets.pineconeApiKey
+    const assistantName = process.env.PINECONE_ASSISTANT_NAME || serverSecrets.pineconeAssistantName
 
-    // Simulate processing delay
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    // Note: apiKey may come from serverSecrets fallback for quick testing
 
-    // Mock response
-    const mockResponse = {
-      message: `Esta es una respuesta simulada para: "${message}". En la implementación real, aquí se conectaría con el sistema Abacus RAG para generar una respuesta inteligente basada en el contexto y conocimiento disponible.`,
-      timestamp: new Date().toISOString(),
+    // Call Pinecone Assistants REST API (non-streaming)
+    const url = `https://api.pinecone.io/assistant/assistants/${encodeURIComponent(
+      assistantName,
+    )}/chat/completions`
+
+    const pcResponse = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Api-Key": apiKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        messages: [
+          {
+            role: "user",
+            content: message,
+          },
+        ],
+      }),
+    })
+
+    if (!pcResponse.ok) {
+      const text = await pcResponse.text()
+      return NextResponse.json(
+        { error: "Error de Pinecone", status: pcResponse.status, details: text },
+        { status: 502 },
+      )
     }
 
-    return NextResponse.json(mockResponse)
+    const data = (await pcResponse.json()) as any
+
+    // Try to normalize likely shapes
+    const assistantContent =
+      data?.message?.content ??
+      data?.choices?.[0]?.message?.content ??
+      data?.messages?.[0]?.content ??
+      (typeof data === "string" ? data : null)
+
+    return NextResponse.json({
+      message: assistantContent ?? "(Sin contenido de respuesta)",
+      timestamp: new Date().toISOString(),
+    })
   } catch (error) {
     console.error("Chat API error:", error)
     return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 })

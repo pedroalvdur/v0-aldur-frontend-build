@@ -45,20 +45,22 @@ export default function ChatPage() {
     setIsLoading(true)
 
     try {
-      // TODO: Replace with actual API call to /api/chat
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: input.trim() }),
       })
 
-      if (!response.ok) throw new Error("Error en la respuesta")
+      if (!response.ok) {
+        const text = await response.text()
+        throw new Error(text || "Error en la respuesta")
+      }
 
-      // Simulate streaming response
+      const data = (await response.json()) as { message?: string }
+
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content:
-          "Esta es una respuesta simulada del sistema RAG. En la implementación real, aquí se mostraría la respuesta streaming del backend.",
+        content: data?.message ?? "(Sin contenido de respuesta)",
         role: "assistant",
         timestamp: new Date(),
       }
