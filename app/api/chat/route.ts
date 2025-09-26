@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
 
     const apiKey = process.env.PINECONE_API_KEY || serverSecrets.pineconeApiKey
     const assistantName = process.env.PINECONE_ASSISTANT_NAME || serverSecrets.pineconeAssistantName
-    const baseUrl = (process.env.PINECONE_BASE_URL || "https://api.pinecone.io").replace(/\/$/, "")
+    const baseUrl = (process.env.PINECONE_BASE_URL || "https://prod-1-data.ke.pinecone.io").replace(/\/$/, "")
 
     const url = `${baseUrl}/chat/${encodeURIComponent(assistantName)}`
 
