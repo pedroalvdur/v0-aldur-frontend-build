@@ -1,6 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { serverSecrets } from "@/lib/server-secrets"
 
+// Relax typing for process in environments without Node types
+declare const process: any
+
 export async function POST(request: NextRequest) {
   try {
     const { message } = await request.json()
@@ -13,6 +16,7 @@ export async function POST(request: NextRequest) {
     const assistantName = process.env.PINECONE_ASSISTANT_NAME || serverSecrets.pineconeAssistantName
     const assistantId = process.env.PINECONE_ASSISTANT_ID || ""
     const baseUrl = (process.env.PINECONE_BASE_URL || "https://api.pinecone.io").replace(/\/$/, "")
+    const projectId = process.env.PINECONE_PROJECT_ID || ""
 
     // Note: apiKey may come from serverSecrets fallback for quick testing
 
@@ -39,7 +43,27 @@ export async function POST(request: NextRequest) {
         ]
       : []
 
-    const candidateUrls = [...idTargets, ...nameTargets].map((p) => `${baseUrl}${p}`)
+    const pluginNameTargets = assistantName
+      ? [
+          `/plugins/assistant/assistants/${encodeURIComponent(assistantName)}/chat/completions`,
+          `/plugins/assistant/v1/assistants/${encodeURIComponent(assistantName)}/chat/completions`,
+          `/plugins/assistant/assistants/${encodeURIComponent(assistantName)}/chat`,
+          `/plugins/assistant/v1/assistants/${encodeURIComponent(assistantName)}/chat`,
+        ]
+      : []
+
+    const pluginIdTargets = assistantId
+      ? [
+          `/plugins/assistant/assistants/${encodeURIComponent(assistantId)}/chat/completions`,
+          `/plugins/assistant/v1/assistants/${encodeURIComponent(assistantId)}/chat/completions`,
+          `/plugins/assistant/assistants/${encodeURIComponent(assistantId)}/chat`,
+          `/plugins/assistant/v1/assistants/${encodeURIComponent(assistantId)}/chat`,
+        ]
+      : []
+
+    const candidateUrls = [...pluginIdTargets, ...pluginNameTargets, ...idTargets, ...nameTargets].map(
+      (p) => `${baseUrl}${p}`,
+    )
 
     const payload = {
       messages: [
@@ -81,6 +105,13 @@ export async function POST(request: NextRequest) {
           headers: { "x-api-key": apiKey, "Content-Type": "application/json" },
         },
       ]
+
+      // If a project id is provided, add it to all header variants
+      if (projectId) {
+        for (const hv of headerVariants) {
+          hv.headers["x-project-id"] = projectId
+        }
+      }
 
       for (const hv of headerVariants) {
         try {
