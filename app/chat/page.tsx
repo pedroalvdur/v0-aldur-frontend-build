@@ -102,33 +102,33 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen bg-background overflow-hidden">
       <Sidebar />
 
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-h-0">
         {/* Chat Header */}
-        <div className="border-b border-border p-4">
+        <div className="border-b border-border p-4 flex-shrink-0">
           <h1 className="text-xl font-semibold">Chat con Abacus RAG</h1>
           <p className="text-sm text-muted-foreground">Haz preguntas y obtén respuestas inteligentes</p>
         </div>
 
-        {/* Messages Area */}
-        <ScrollArea className="flex-1 p-4">
-          <div className="space-y-4 max-w-4xl mx-auto">
-            {messages.map((message) => (
-              <ChatBubble key={message.id} message={message} />
-            ))}
-            {isLoading && (
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Cargando...</span>
-              </div>
-            )}
-          </div>
-        </ScrollArea>
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <ScrollArea className="h-full p-4">
+            <div className="space-y-4 max-w-4xl mx-auto">
+              {messages.map((message) => (
+                <ChatBubble key={message.id} message={message} />
+              ))}
+              {isLoading && (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Cargando...</span>
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        </div>
 
-        {/* Input Area */}
-        <div className="border-t border-border p-4">
+        <div className="border-t border-border p-4 flex-shrink-0">
           <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
             <div className="flex gap-2">
               <Input
