@@ -2,11 +2,15 @@
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { MessageSquare, Settings, LogOut } from "lucide-react"
+import { MessageSquare, Settings, LogOut, X } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
-export function Sidebar() {
+interface SidebarProps {
+  onClose?: () => void
+}
+
+export function Sidebar({ onClose }: SidebarProps) {
   const pathname = usePathname()
 
   const navigation = [
@@ -25,11 +29,20 @@ export function Sidebar() {
   ]
 
   return (
-    <div className="flex flex-col w-64 bg-sidebar border-r border-sidebar-border">
+    <div className="flex flex-col w-64 h-screen bg-sidebar border-r border-sidebar-border">
       {/* Logo/Header */}
       <div className="p-4 border-b border-sidebar-border">
-        <h2 className="text-lg font-semibold text-sidebar-foreground">Aldur</h2>
-        <p className="text-sm text-sidebar-foreground/70">Operaciones</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-sidebar-foreground">Aldur</h2>
+            <p className="text-sm text-sidebar-foreground/70">Operaciones</p>
+          </div>
+          {onClose && (
+            <Button variant="ghost" size="sm" className="md:hidden" onClick={onClose}>
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Navigation */}
@@ -37,7 +50,7 @@ export function Sidebar() {
         {navigation.map((item) => {
           const Icon = item.icon
           return (
-            <Link key={item.name} href={item.href}>
+            <Link key={item.name} href={item.href} onClick={onClose}>
               <Button
                 variant={item.current ? "secondary" : "ghost"}
                 className={cn(
@@ -63,6 +76,7 @@ export function Sidebar() {
           onClick={() => {
             // TODO: Implement logout
             console.log("Logout clicked")
+            onClose?.()
           }}
         >
           <LogOut className="h-4 w-4" />

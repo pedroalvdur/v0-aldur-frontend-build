@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Sidebar } from "@/components/sidebar"
 import { ChatBubble } from "@/components/chat-bubble"
-import { Send, Loader2 } from "lucide-react"
+import { Send, Loader2, Menu } from "lucide-react"
 
 interface Message {
   id: string
@@ -28,6 +28,7 @@ export default function ChatPage() {
   ])
   const [input, setInput] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -103,13 +104,32 @@ export default function ChatPage() {
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
-      <Sidebar />
+      {isSidebarOpen && (
+        <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={() => setIsSidebarOpen(false)} />
+      )}
 
-      <div className="flex-1 flex flex-col min-h-0">
+      <div
+        className={`
+        fixed md:relative z-50 md:z-auto
+        ${isSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
+        transition-transform duration-300 ease-in-out
+      `}
+      >
+        <Sidebar onClose={() => setIsSidebarOpen(false)} />
+      </div>
+
+      <div className="flex-1 flex flex-col min-h-0 w-full md:w-auto">
         {/* Chat Header */}
         <div className="border-b border-border p-4 flex-shrink-0">
-          <h1 className="text-xl font-semibold">Chat con Aldur Bot</h1>
-          <p className="text-sm text-muted-foreground">Haz preguntas y obtén respuestas inteligentes</p>
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="sm" className="md:hidden" onClick={() => setIsSidebarOpen(true)}>
+              <Menu className="h-4 w-4" />
+            </Button>
+            <div>
+              <h1 className="text-xl font-semibold">Chat con Aldur Bot</h1>
+              <p className="text-sm text-muted-foreground">Haz preguntas y obtén respuestas inteligentes</p>
+            </div>
+          </div>
         </div>
 
         <div className="flex-1 min-h-0 overflow-hidden">
@@ -136,9 +156,9 @@ export default function ChatPage() {
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Escribe tu mensaje..."
                 disabled={isLoading}
-                className="flex-1"
+                className="flex-1 min-w-0"
               />
-              <Button type="submit" disabled={isLoading || !input.trim()}>
+              <Button type="submit" disabled={isLoading || !input.trim()} className="flex-shrink-0">
                 <Send className="h-4 w-4" />
                 <span className="sr-only">Enviar</span>
               </Button>
