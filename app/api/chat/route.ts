@@ -14,7 +14,8 @@ export async function POST(request: NextRequest) {
 
     const apiKey = process.env.PINECONE_API_KEY || serverSecrets.pineconeApiKey
     const assistantName = process.env.PINECONE_ASSISTANT_NAME || serverSecrets.pineconeAssistantName
-    const baseUrl = (process.env.PINECONE_BASE_URL || "https://prod-1-data.ke.pinecone.io").replace(/\/$/, "")
+
+    const baseUrl = "https://prod-1-data.ke.pinecone.io"
 
     const url = `${baseUrl}/assistant/chat/${encodeURIComponent(assistantName)}`
 
@@ -62,7 +63,7 @@ export async function POST(request: NextRequest) {
       console.log("[v0] Success response received:", JSON.stringify(data, null, 2))
 
       const assistantContent =
-        data?.message?.content || data?.choices?.[0]?.message?.content || "Sin respuesta del asistente"
+        data?.message?.content || data?.choices?.[0]?.message?.content || data?.content || "Sin respuesta del asistente"
 
       return NextResponse.json({
         message: assistantContent,
