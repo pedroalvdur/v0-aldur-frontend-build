@@ -7,5 +7,3 @@ export const serverSecrets = {
     "pcsk_SUhgw_HZxuXuqAaBB1t1HvCTwJKR3RwQs2Q9hzTHmHAG5iz6i1Wjck2e18JAw2s5Q3DPK",
   pineconeAssistantName: process.env.PINECONE_ASSISTANT_NAME || "aldur",
 }
-
-

@@ -43,10 +43,10 @@ Warning: The fallback contains a secret and is for short-lived testing only. Rem
 
 Optional: `.env.local`
 
-```
+\`\`\`
 PINECONE_API_KEY=your_key
 PINECONE_ASSISTANT_NAME=aldur
-```
+\`\`\`
 
 ### Push with GitHub Desktop
 

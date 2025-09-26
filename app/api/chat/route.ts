@@ -14,56 +14,9 @@ export async function POST(request: NextRequest) {
 
     const apiKey = process.env.PINECONE_API_KEY || serverSecrets.pineconeApiKey
     const assistantName = process.env.PINECONE_ASSISTANT_NAME || serverSecrets.pineconeAssistantName
-    const assistantId = process.env.PINECONE_ASSISTANT_ID || ""
     const baseUrl = (process.env.PINECONE_BASE_URL || "https://api.pinecone.io").replace(/\/$/, "")
-    const projectId = process.env.PINECONE_PROJECT_ID || ""
 
-    // Note: apiKey may come from serverSecrets fallback for quick testing
-
-    // Try a few likely Pinecone Assistants REST endpoints (non-streaming)
-    const nameTargets = assistantName
-      ? [
-          `/assistant/assistants/${encodeURIComponent(assistantName)}/chat/completions`,
-          `/assistants/${encodeURIComponent(assistantName)}/chat/completions`,
-          `/assistant/v1/assistants/${encodeURIComponent(assistantName)}/chat/completions`,
-          `/v1/assistants/${encodeURIComponent(assistantName)}/chat/completions`,
-          `/assistant/assistants/${encodeURIComponent(assistantName)}/chat`,
-          `/assistants/${encodeURIComponent(assistantName)}/chat`,
-        ]
-      : []
-
-    const idTargets = assistantId
-      ? [
-          `/assistant/assistants/${encodeURIComponent(assistantId)}/chat/completions`,
-          `/assistants/${encodeURIComponent(assistantId)}/chat/completions`,
-          `/assistant/v1/assistants/${encodeURIComponent(assistantId)}/chat/completions`,
-          `/v1/assistants/${encodeURIComponent(assistantId)}/chat/completions`,
-          `/assistant/assistants/${encodeURIComponent(assistantId)}/chat`,
-          `/assistants/${encodeURIComponent(assistantId)}/chat`,
-        ]
-      : []
-
-    const pluginNameTargets = assistantName
-      ? [
-          `/plugins/assistant/assistants/${encodeURIComponent(assistantName)}/chat/completions`,
-          `/plugins/assistant/v1/assistants/${encodeURIComponent(assistantName)}/chat/completions`,
-          `/plugins/assistant/assistants/${encodeURIComponent(assistantName)}/chat`,
-          `/plugins/assistant/v1/assistants/${encodeURIComponent(assistantName)}/chat`,
-        ]
-      : []
-
-    const pluginIdTargets = assistantId
-      ? [
-          `/plugins/assistant/assistants/${encodeURIComponent(assistantId)}/chat/completions`,
-          `/plugins/assistant/v1/assistants/${encodeURIComponent(assistantId)}/chat/completions`,
-          `/plugins/assistant/assistants/${encodeURIComponent(assistantId)}/chat`,
-          `/plugins/assistant/v1/assistants/${encodeURIComponent(assistantId)}/chat`,
-        ]
-      : []
-
-    const candidateUrls = [...pluginIdTargets, ...pluginNameTargets, ...idTargets, ...nameTargets].map(
-      (p) => `${baseUrl}${p}`,
-    )
+    const url = `${baseUrl}/chat/${encodeURIComponent(assistantName)}`
 
     const payload = {
       messages: [
@@ -74,96 +27,59 @@ export async function POST(request: NextRequest) {
       ],
     }
 
-    const attemptResults: Array<{
-      url: string
-      status: number
-      body: string
-      auth: "api-key" | "bearer" | "x-pinecone" | "x-api-key"
-    }> = []
-    let data: any = null
+    console.log("[v0] Attempting Pinecone request to:", url)
+    console.log("[v0] Using assistant name:", assistantName)
 
-    for (const url of candidateUrls) {
-      // Try with Api-Key and with Authorization: Bearer to be safe
-      const headerVariants: Array<{
-        auth: "api-key" | "bearer" | "x-pinecone" | "x-api-key"
-        headers: Record<string, string>
-      }> = [
-        {
-          auth: "api-key",
-          headers: { "Api-Key": apiKey, "Content-Type": "application/json" },
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Api-Key": apiKey,
+          "Content-Type": "application/json",
         },
-        {
-          auth: "bearer",
-          headers: { Authorization: `Bearer ${apiKey}` as string, "Content-Type": "application/json" },
-        },
-        {
-          auth: "x-pinecone",
-          headers: { "x-pinecone-api-key": apiKey, "Content-Type": "application/json" },
-        },
-        {
-          auth: "x-api-key",
-          headers: { "x-api-key": apiKey, "Content-Type": "application/json" },
-        },
-      ]
+        body: JSON.stringify(payload),
+      })
 
-      // If a project id is provided, add it to all header variants
-      if (projectId) {
-        for (const hv of headerVariants) {
-          hv.headers["x-project-id"] = projectId
-        }
+      console.log("[v0] Response status:", response.status)
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.log("[v0] Error response:", errorText)
+
+        return NextResponse.json(
+          {
+            error: "Error de Pinecone",
+            details: `Status ${response.status}: ${errorText}`,
+            assistantName,
+            url,
+          },
+          { status: response.status },
+        )
       }
 
-      for (const hv of headerVariants) {
-        try {
-          const resp = await fetch(url, {
-            method: "POST",
-            headers: hv.headers,
-            body: JSON.stringify(payload),
-          })
+      const data = await response.json()
+      console.log("[v0] Success response received")
 
-          if (resp.ok) {
-            data = await resp.json()
-            attemptResults.push({ url, status: resp.status, body: "OK", auth: hv.auth })
-            break
-          } else {
-            const body = await resp.text()
-            attemptResults.push({ url, status: resp.status, body: body.slice(0, 2000), auth: hv.auth })
-          }
-        } catch (err: any) {
-          attemptResults.push({ url, status: 0, body: String(err).slice(0, 1000), auth: hv.auth })
-        }
-      }
+      // Extract the assistant's message from the response
+      const assistantContent = data?.message?.content || "Sin respuesta del asistente"
 
-      if (data) break
-    }
+      return NextResponse.json({
+        message: assistantContent,
+        timestamp: new Date().toISOString(),
+      })
+    } catch (fetchError: any) {
+      console.log("[v0] Fetch error:", fetchError.message)
 
-    if (!data) {
       return NextResponse.json(
         {
-          error: "Error de Pinecone",
-          note:
-            "Todas las URL candidatas fallaron. Revisa assistantName/assistantId, baseUrl, ruta del endpoint y permisos del API key.",
+          error: "Error de conexión con Pinecone",
+          details: fetchError.message,
           assistantName,
-          assistantId: assistantId || null,
-          baseUrl,
-          keySource: process.env.PINECONE_API_KEY ? "env" : "fallback",
-          attempts: attemptResults,
+          url,
         },
         { status: 502 },
       )
     }
-
-    // Try to normalize likely shapes
-    const assistantContent =
-      data?.message?.content ??
-      data?.choices?.[0]?.message?.content ??
-      data?.messages?.[0]?.content ??
-      (typeof data === "string" ? data : null)
-
-    return NextResponse.json({
-      message: assistantContent ?? "(Sin contenido de respuesta)",
-      timestamp: new Date().toISOString(),
-    })
   } catch (error) {
     console.error("Chat API error:", error)
     return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 })
