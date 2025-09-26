@@ -46,10 +46,15 @@ export default function ChatPage() {
     setIsLoading(true)
 
     try {
+      const conversationHistory = [...messages, userMessage].map((msg) => ({
+        role: msg.role,
+        content: msg.content,
+      }))
+
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: input.trim() }),
+        body: JSON.stringify({ messages: conversationHistory }),
       })
 
       if (!response.ok) {

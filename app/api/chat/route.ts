@@ -2,10 +2,13 @@ import { type NextRequest, NextResponse } from "next/server"
 
 export async function POST(request: NextRequest) {
   try {
-    const { message } = await request.json()
+    const { messages, message } = await request.json()
 
-    if (!message || typeof message !== "string") {
-      return NextResponse.json({ error: "Mensaje requerido" }, { status: 400 })
+    // Support both old format (single message) and new format (messages array) for backward compatibility
+    const conversationMessages = messages || [{ role: "user", content: message }]
+
+    if (!conversationMessages || !Array.isArray(conversationMessages) || conversationMessages.length === 0) {
+      return NextResponse.json({ error: "Mensajes requeridos" }, { status: 400 })
     }
 
     const apiKey = process.env.PINECONE_API_KEY
@@ -20,16 +23,12 @@ export async function POST(request: NextRequest) {
     const url = `${baseUrl}/assistant/chat/${encodeURIComponent(assistantName)}`
 
     const payload = {
-      messages: [
-        {
-          role: "user",
-          content: message,
-        },
-      ],
+      messages: conversationMessages,
     }
 
     console.log("[v0] Attempting Pinecone request to:", url)
     console.log("[v0] Using assistant name:", assistantName)
+    console.log("[v0] Sending", conversationMessages.length, "messages for context")
 
     try {
       const response = await fetch(url, {
