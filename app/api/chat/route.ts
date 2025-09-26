@@ -1,8 +1,4 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { serverSecrets } from "@/lib/server-secrets"
-
-// Relax typing for process in environments without Node types
-declare const process: any
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,11 +8,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Mensaje requerido" }, { status: 400 })
     }
 
-    const apiKey = process.env.PINECONE_API_KEY || serverSecrets.pineconeApiKey
-    const assistantName = process.env.PINECONE_ASSISTANT_NAME || serverSecrets.pineconeAssistantName
+    const apiKey = process.env.PINECONE_API_KEY
+    const assistantName = process.env.PINECONE_ASSISTANT_NAME
+
+    if (!apiKey || !assistantName) {
+      console.error("[v0] Missing required environment variables")
+      return NextResponse.json({ error: "Configuración del servidor incompleta" }, { status: 500 })
+    }
 
     const baseUrl = "https://prod-1-data.ke.pinecone.io"
-
     const url = `${baseUrl}/assistant/chat/${encodeURIComponent(assistantName)}`
 
     const payload = {
@@ -30,7 +30,6 @@ export async function POST(request: NextRequest) {
 
     console.log("[v0] Attempting Pinecone request to:", url)
     console.log("[v0] Using assistant name:", assistantName)
-    console.log("[v0] Using base URL:", baseUrl)
 
     try {
       const response = await fetch(url, {
@@ -60,7 +59,7 @@ export async function POST(request: NextRequest) {
       }
 
       const data = await response.json()
-      console.log("[v0] Success response received:", JSON.stringify(data, null, 2))
+      console.log("[v0] Success response received")
 
       const assistantContent =
         data?.message?.content || data?.choices?.[0]?.message?.content || data?.content || "Sin respuesta del asistente"
