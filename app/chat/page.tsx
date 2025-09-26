@@ -21,7 +21,7 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
-      content: "Hola, soy Abacus RAG. ¿En qué puedo ayudarte hoy?",
+      content: "Hola, soy Aldur Bot. ¿En qué puedo ayudarte hoy?",
       role: "assistant",
       timestamp: new Date(),
     },
@@ -108,7 +108,7 @@ export default function ChatPage() {
       <div className="flex-1 flex flex-col min-h-0">
         {/* Chat Header */}
         <div className="border-b border-border p-4 flex-shrink-0">
-          <h1 className="text-xl font-semibold">Chat con Abacus RAG</h1>
+          <h1 className="text-xl font-semibold">Chat con Aldur Bot</h1>
           <p className="text-sm text-muted-foreground">Haz preguntas y obtén respuestas inteligentes</p>
         </div>
 

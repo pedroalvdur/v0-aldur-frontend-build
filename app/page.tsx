@@ -12,7 +12,7 @@ export default function HomePage() {
           <h1 className="text-4xl font-bold text-foreground">Aldur</h1>
           <p className="text-xl text-muted-foreground">Herramienta de operaciones internas</p>
           <p className="text-sm text-muted-foreground max-w-md mx-auto">
-            Accede al chat con Abacus RAG y gestiona trabajos del sistema desde una interfaz unificada
+            Accede al chat con Aldur Bot y gestiona trabajos del sistema desde una interfaz unificada
           </p>
         </div>
 
@@ -22,7 +22,7 @@ export default function HomePage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <MessageSquare className="h-5 w-5 text-primary" />
-                Chat con Abacus RAG
+                Chat con Aldur Bot
               </CardTitle>
               <CardDescription>Haz preguntas y obtén respuestas inteligentes del sistema RAG</CardDescription>
             </CardHeader>
