@@ -2,20 +2,19 @@ import { NextResponse } from "next/server"
 
 export async function POST() {
   try {
-    // TODO: Implement actual logout logic
-    // This would typically involve:
-    // 1. Invalidating JWT tokens
-    // 2. Clearing secure cookies
-    // 3. Logging the logout event
-
-    // Mock logout
     const response = NextResponse.json({
       success: true,
       message: "Sesión cerrada exitosamente",
     })
 
-    // In a real implementation, clear auth cookies here
-    // response.cookies.delete('auth-token')
+    // Clear the auth token cookie
+    response.cookies.set("auth-token", "", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 0, // Expire immediately
+      path: "/",
+    })
 
     return response
   } catch (error) {

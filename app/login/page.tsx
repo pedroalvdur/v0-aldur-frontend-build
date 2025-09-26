@@ -1,24 +1,48 @@
 "use client"
 
 import type React from "react"
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/contexts/auth-context"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import Link from "next/link"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 export default function LoginPage() {
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [error, setError] = useState("")
+  const [loading, setLoading] = useState(false)
+  const { login } = useAuth()
+  const router = useRouter()
+
   const handleGoogleLogin = () => {
     // TODO: Implement Google OAuth login
-    console.log("Google login clicked")
+    setError("Google login no implementado aún")
   }
 
-  const handleEmailLogin = (e: React.FormEvent) => {
+  const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    // TODO: Implement email/password login
-    console.log("Email login submitted")
+    setError("")
+    setLoading(true)
+
+    try {
+      const result = await login(email, password)
+
+      if (result.success) {
+        router.push("/dashboard")
+      } else {
+        setError(result.error || "Error al iniciar sesión")
+      }
+    } catch (err) {
+      setError("Error de conexión")
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -29,6 +53,12 @@ export default function LoginPage() {
           <CardDescription>Herramienta de operaciones internas</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
           <Button onClick={handleGoogleLogin} variant="outline" className="w-full bg-transparent" type="button">
             <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
               <path
@@ -51,37 +81,45 @@ export default function LoginPage() {
             Acceder con Google
           </Button>
 
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <Separator className="w-full" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">O continúa con</span>
-            </div>
+          <div className="absolute inset-0 flex items-center">
+            <Separator className="w-full" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-background px-2 text-muted-foreground">O continúa con</span>
           </div>
 
           <form onSubmit={handleEmailLogin} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Correo electrónico</Label>
-              <Input id="email" type="email" placeholder="tu@empresa.com" required />
+              <Input
+                id="email"
+                type="email"
+                placeholder="admin@aldur.com o worker@aldur.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Contraseña</Label>
-              <Input id="password" type="password" placeholder="••••••••" required />
+              <Input
+                id="password"
+                type="password"
+                placeholder="admin123 o worker123"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
             </div>
-            <Button type="submit" className="w-full">
-              Iniciar sesión
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Iniciando sesión..." : "Iniciar sesión"}
             </Button>
           </form>
 
           <div className="text-center text-sm text-muted-foreground">
-            <Link href="/chat" className="text-primary hover:underline">
-              Ir al chat
-            </Link>
-            {" • "}
-            <Link href="/jobs" className="text-primary hover:underline">
-              Ver trabajos
-            </Link>
+            <p>Usuarios de prueba:</p>
+            <p>admin@aldur.com / admin123 (Owner)</p>
+            <p>worker@aldur.com / worker123 (Worker)</p>
           </div>
         </CardContent>
       </Card>

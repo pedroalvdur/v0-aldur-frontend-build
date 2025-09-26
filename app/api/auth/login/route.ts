@@ -1,50 +1,71 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { validateCredentials, generateToken } from "@/lib/auth"
 
 export async function POST(request: NextRequest) {
   try {
     const { email, password, provider } = await request.json()
 
-    // TODO: Implement actual authentication logic
-    // This would typically involve:
-    // 1. Validating credentials against your auth system
-    // 2. Creating JWT tokens or sessions
-    // 3. Setting secure cookies
-    // 4. Returning user info and tokens
-
     if (provider === "google") {
       // TODO: Implement Google OAuth flow
-      return NextResponse.json({
-        success: true,
-        message: "Google login no implementado aún",
-        redirectUrl: "/chat",
-      })
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Google login no implementado aún",
+        },
+        { status: 400 },
+      )
     }
 
     if (!email || !password) {
-      return NextResponse.json({ error: "Email y contraseña requeridos" }, { status: 400 })
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Email y contraseña requeridos",
+        },
+        { status: 400 },
+      )
     }
 
-    // Mock authentication - accept any email/password for demo
-    const mockUser = {
-      id: "1",
-      email: email,
-      name: "Usuario Demo",
-      role: "admin",
+    const user = await validateCredentials(email, password)
+
+    if (!user) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Credenciales inválidas",
+        },
+        { status: 401 },
+      )
     }
 
-    // In a real implementation, you would:
-    // - Hash and verify password
-    // - Generate JWT token
-    // - Set secure httpOnly cookies
+    // Generate JWT token
+    const token = generateToken(user)
 
-    return NextResponse.json({
+    // Create response with secure cookie
+    const response = NextResponse.json({
       success: true,
-      user: mockUser,
-      token: "mock-jwt-token",
-      redirectUrl: "/chat",
+      user,
+      redirectUrl: "/dashboard",
     })
+
+    // Set secure httpOnly cookie
+    response.cookies.set("auth-token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 24 * 60 * 60, // 24 hours
+      path: "/",
+    })
+
+    return response
   } catch (error) {
     console.error("Login error:", error)
-    return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 })
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Error interno del servidor",
+      },
+      { status: 500 },
+    )
   }
 }
