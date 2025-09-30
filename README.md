@@ -1,4 +1,4 @@
-# Aldur frontend build
+# Aldur - Herramienta de Operaciones Internas
 
 *Automatically synced with your [v0.app](https://v0.app) deployments*
 
@@ -7,63 +7,160 @@
 
 ## Overview
 
-This repository will stay in sync with your deployed chats on [v0.app](https://v0.app).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.app](https://v0.app).
+Herramienta interna de operaciones con chat RAG (Retrieval-Augmented Generation) y dashboard de trabajos. Incluye autenticación segura con enlaces mágicos por correo electrónico y lista blanca de usuarios autorizados.
+
+## Features
+
+- **Chat RAG**: Interfaz de chat con Pinecone Assistant para consultas inteligentes
+- **Dashboard de Trabajos**: Gestión y visualización de trabajos con filtros y búsqueda
+- **Autenticación Segura**: Sistema de autenticación passwordless con NextAuth.js
+- **Email Whitelist**: Control de acceso mediante lista blanca de correos electrónicos
+- **Protección de Rutas**: Middleware para proteger rutas sensibles
+
+## Tech Stack
+
+- **Framework**: Next.js 15 (App Router)
+- **Authentication**: NextAuth.js con Email Provider
+- **Database**: Vercel Postgres con Prisma ORM
+- **AI/RAG**: Pinecone Assistant
+- **UI**: Tailwind CSS + shadcn/ui
+- **Deployment**: Vercel
+
+## Setup
+
+### 1. Install Dependencies
+
+\`\`\`bash
+pnpm install
+\`\`\`
+
+### 2. Configure Environment Variables
+
+Create a `.env.local` file with the following variables:
+
+\`\`\`env
+# Database (Vercel Postgres)
+POSTGRES_PRISMA_URL=your_postgres_prisma_url
+POSTGRES_URL_NON_POOLING=your_postgres_url_non_pooling
+
+# NextAuth
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=your_nextauth_secret_here
+
+# Email Server (SMTP)
+EMAIL_SERVER_HOST=smtp.gmail.com
+EMAIL_SERVER_PORT=587
+EMAIL_SERVER_USER=your_email@gmail.com
+EMAIL_SERVER_PASSWORD=your_app_password
+EMAIL_FROM=noreply@aldur.com
+
+# Email Whitelist (comma-separated)
+ALLOWED_EMAILS=aldurbot@gmail.com,user2@example.com
+
+# Pinecone
+PINECONE_API_KEY=your_pinecone_api_key
+PINECONE_ASSISTANT_NAME=aldur
+PINECONE_BASE_URL=your_pinecone_base_url
+\`\`\`
+
+### 3. Setup Database
+
+Run the Prisma migrations to create the necessary tables:
+
+\`\`\`bash
+pnpm prisma generate
+pnpm prisma db push
+\`\`\`
+
+Or run the SQL initialization script in the `scripts` folder.
+
+### 4. Configure Email Provider
+
+For Gmail SMTP:
+1. Enable 2-factor authentication on your Google account
+2. Generate an App Password: https://myaccount.google.com/apppasswords
+3. Use the App Password as `EMAIL_SERVER_PASSWORD`
+
+### 5. Generate NextAuth Secret
+
+\`\`\`bash
+openssl rand -base64 32
+\`\`\`
+
+Use the output as your `NEXTAUTH_SECRET`.
+
+### 6. Run Development Server
+
+\`\`\`bash
+pnpm dev
+\`\`\`
+
+Open [http://localhost:3000](http://localhost:3000) to see the application.
+
+## Authentication Flow
+
+1. User enters their email on the login page
+2. System checks if email is in the whitelist
+3. If authorized, a magic link is sent to the user's email
+4. User clicks the magic link to authenticate
+5. Session is created and stored in the database
+6. User can access protected routes (/chat, /jobs)
+
+## Managing Email Whitelist
+
+Add authorized emails in two ways:
+
+1. **Hardcoded** (for permanent users): Edit `lib/email-whitelist.ts`
+2. **Environment Variable** (for flexible deployment): Add to `ALLOWED_EMAILS` in `.env.local`
 
 ## Deployment
 
-Your project is live at:
+### Deploy to Vercel
 
-**[https://vercel.com/pedroj9821-8802s-projects/v0-aldur-frontend-build](https://vercel.com/pedroj9821-8802s-projects/v0-aldur-frontend-build)**
+1. Push your code to GitHub
+2. Import the repository in Vercel
+3. Add all environment variables in Vercel Project Settings
+4. Deploy
 
-## Build your app
+**Live Deployment**: [https://vercel.com/pedroj9821-8802s-projects/v0-aldur-frontend-build](https://vercel.com/pedroj9821-8802s-projects/v0-aldur-frontend-build)
 
-Continue building your app on:
+### Environment Variables in Production
 
-**[https://v0.app/chat/projects/pEZIVe4gxrv](https://v0.app/chat/projects/pEZIVe4gxrv)**
+Make sure to set all environment variables in Vercel:
+- Go to Project Settings → Environment Variables
+- Add all variables from `.env.local`
+- Update `NEXTAUTH_URL` to your production URL
 
-## How It Works
-
-1. Create and modify your project using [v0.app](https://v0.app)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
-
-## Pinecone Assistant quick test
-
-The API route `app/api/chat/route.ts` calls Pinecone Assistants REST. It reads credentials from server env, but also includes a temporary server-only fallback in `lib/server-secrets.ts` for quick preview testing.
-
-Warning: The fallback contains a secret and is for short-lived testing only. Remove it after validation.
-
-### Local run
-
-1. Install deps: `pnpm install`
-2. Start dev: `pnpm dev`
-3. Open the Chat page and send a message to hit `/api/chat`.
-
-Optional: `.env.local`
+## Project Structure
 
 \`\`\`
-PINECONE_API_KEY=your_key
-PINECONE_ASSISTANT_NAME=aldur
+├── app/
+│   ├── api/
+│   │   ├── auth/[...nextauth]/  # NextAuth API routes
+│   │   ├── chat/                # Chat API endpoints
+│   │   └── jobs/                # Jobs API endpoints
+│   ├── chat/                    # Chat page (protected)
+│   ├── jobs/                    # Jobs dashboard (protected)
+│   ├── login/                   # Login pages
+│   └── page.tsx                 # Landing page
+├── components/
+│   ├── ui/                      # shadcn/ui components
+│   ├── header.tsx               # App header with auth
+│   └── providers.tsx            # NextAuth SessionProvider
+├── lib/
+│   ├── auth.ts                  # NextAuth configuration
+│   ├── auth-helpers.ts          # Auth utility functions
+│   ├── email-whitelist.ts       # Email whitelist logic
+│   └── prisma.ts                # Prisma client
+├── prisma/
+│   └── schema.prisma            # Database schema
+└── middleware.ts                # Route protection
 \`\`\`
 
-### Push with GitHub Desktop
+## Development
 
-1. Open this repo folder.
-2. Commit the updated files:
-   - `app/api/chat/route.ts`
-   - `app/chat/page.tsx`
-   - `lib/server-secrets.ts`
-3. Push to `main` and let V0/Vercel build the preview.
+Continue building your app on [v0.app](https://v0.app/chat/projects/pEZIVe4gxrv)
 
-### Test in V0 preview
+## Support
 
-1. Open the preview URL from V0/Vercel
-2. Go to Chat page and send a prompt.
-
-### Clean up after testing
-
-1. Delete `lib/server-secrets.ts`
-2. Remove its import and fallback from `app/api/chat/route.ts`
-3. Set env vars in your hosting (e.g., Vercel → Project Settings → Environment Variables) and redeploy.
+For issues or questions, contact the development team or open an issue in the repository.
