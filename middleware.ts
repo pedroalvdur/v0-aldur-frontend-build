@@ -1,6 +1,17 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
-import { getSessionFromRequest } from "@/lib/auth"
+
+// We will validate session via next-auth cookies presence and rely on server route checks as well
+function isAuthenticated(request: NextRequest): boolean {
+  // NextAuth sets different cookie names depending on environment/strategy
+  // We only do a soft check here; definitive checks happen in route handlers
+  const hasSession = Boolean(
+    request.cookies.get("next-auth.session-token") ||
+      request.cookies.get("__Secure-next-auth.session-token") ||
+      request.cookies.get("next-auth.callback-url"),
+  )
+  return hasSession
+}
 
 // Define protected routes
 const protectedRoutes = ["/chat", "/jobs", "/dashboard"]
@@ -8,19 +19,17 @@ const authRoutes = ["/login"]
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
-  const user = getSessionFromRequest(request)
+  const authed = isAuthenticated(request)
 
-  // If user is authenticated and trying to access auth pages, redirect to dashboard
-  if (user && authRoutes.includes(pathname)) {
+  if (authed && authRoutes.includes(pathname)) {
     return NextResponse.redirect(new URL("/dashboard", request.url))
   }
 
-  // If user is not authenticated and trying to access protected routes, redirect to login
-  if (!user && protectedRoutes.includes(pathname)) {
+  if (!authed && protectedRoutes.includes(pathname)) {
     return NextResponse.redirect(new URL("/login", request.url))
   }
 
-  // Allow the request to continue
+  // Admin-only guard for jobs will be handled in the page and API route for defense-in-depth
   return NextResponse.next()
 }
 

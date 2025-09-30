@@ -9,6 +9,8 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Sidebar } from "@/components/sidebar"
 import { ChatBubble } from "@/components/chat-bubble"
 import { Send, Loader2, Menu } from "lucide-react"
+import { usePermissions } from "@/hooks/use-permissions"
+import Link from "next/link"
 
 interface Message {
   id: string
@@ -18,6 +20,19 @@ interface Message {
 }
 
 export default function ChatPage() {
+  const { canChat } = usePermissions()
+  if (!canChat()) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center space-y-4">
+          <p className="text-lg">Necesitas iniciar sesión para acceder al chat.</p>
+          <Link href="/login">
+            <Button>Iniciar sesión</Button>
+          </Link>
+        </div>
+      </div>
+    )
+  }
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",

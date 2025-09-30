@@ -1,7 +1,15 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth-options"
 
 export async function POST(request: NextRequest) {
   try {
+    // Require authenticated session
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
+    }
+
     const { messages, message } = await request.json()
 
     // Support both old format (single message) and new format (messages array) for backward compatibility

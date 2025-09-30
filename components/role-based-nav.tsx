@@ -16,7 +16,7 @@ export function RoleBasedNav() {
       <div className="flex items-center gap-2 mb-4">
         <span className="text-sm font-medium">Bienvenido, {user.name}</span>
         <Badge variant={isOwner ? "default" : "secondary"} className="text-xs">
-          {isOwner ? "Owner" : "Worker"}
+          {isOwner ? "Admin" : "User"}
         </Badge>
       </div>
 

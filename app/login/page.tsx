@@ -17,32 +17,20 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
-  const { login } = useAuth()
+  const { loginWithGoogle } = useAuth()
   const router = useRouter()
 
-  const handleGoogleLogin = () => {
-    // TODO: Implement Google OAuth login
-    setError("Google login no implementado aún")
+  const handleGoogleLogin = async () => {
+    try {
+      await loginWithGoogle()
+    } catch (e) {
+      setError("No se pudo iniciar sesión con Google")
+    }
   }
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError("")
-    setLoading(true)
-
-    try {
-      const result = await login(email, password)
-
-      if (result.success) {
-        router.push("/dashboard")
-      } else {
-        setError(result.error || "Error al iniciar sesión")
-      }
-    } catch (err) {
-      setError("Error de conexión")
-    } finally {
-      setLoading(false)
-    }
+    setError("Esta aplicación usa Google para iniciar sesión")
   }
 
   return (
@@ -118,8 +106,8 @@ export default function LoginPage() {
 
           <div className="text-center text-sm text-muted-foreground">
             <p>Usuarios de prueba:</p>
-            <p>admin@aldur.com / admin123 (Owner)</p>
-            <p>worker@aldur.com / worker123 (Worker)</p>
+            <p>aldurbot@gmail.com (Admin)</p>
+            <p>pedroj.98.21@gmail.com (User)</p>
           </div>
         </CardContent>
       </Card>

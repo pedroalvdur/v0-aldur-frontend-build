@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button"
 import { MessageSquare, Settings, LogOut, X } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { usePermissions } from "@/hooks/use-permissions"
+import { useAuth } from "@/contexts/auth-context"
 
 interface SidebarProps {
   onClose?: () => void
@@ -12,6 +14,8 @@ interface SidebarProps {
 
 export function Sidebar({ onClose }: SidebarProps) {
   const pathname = usePathname()
+  const { canViewJobs } = usePermissions()
+  const { logout } = useAuth()
 
   const navigation = [
     {
@@ -19,12 +23,14 @@ export function Sidebar({ onClose }: SidebarProps) {
       href: "/chat",
       icon: MessageSquare,
       current: pathname === "/chat",
+      show: true,
     },
     {
       name: "Trabajos",
       href: "/jobs",
       icon: Settings,
       current: pathname === "/jobs",
+      show: canViewJobs(),
     },
   ]
 
@@ -47,7 +53,7 @@ export function Sidebar({ onClose }: SidebarProps) {
 
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-2">
-        {navigation.map((item) => {
+        {navigation.filter((n) => n.show).map((item) => {
           const Icon = item.icon
           return (
             <Link key={item.name} href={item.href} onClick={onClose}>
@@ -73,9 +79,8 @@ export function Sidebar({ onClose }: SidebarProps) {
         <Button
           variant="ghost"
           className="w-full justify-start gap-2 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-          onClick={() => {
-            // TODO: Implement logout
-            console.log("Logout clicked")
+          onClick={async () => {
+            await logout()
             onClose?.()
           }}
         >

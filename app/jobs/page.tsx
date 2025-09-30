@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { RefreshCw } from "lucide-react"
+import { usePermissions } from "@/hooks/use-permissions"
+import Link from "next/link"
 
 interface Job {
   id: string
@@ -18,6 +20,7 @@ interface Job {
 }
 
 export default function JobsPage() {
+  const { canViewJobs } = usePermissions()
   const [jobs, setJobs] = useState<Job[]>([
     {
       id: "devueltos",
@@ -52,6 +55,19 @@ export default function JobsPage() {
 
   const [selectedJob, setSelectedJob] = useState<Job | null>(null)
   const [isRefreshing, setIsRefreshing] = useState(false)
+
+  if (!canViewJobs()) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center space-y-4">
+          <p className="text-lg">No tienes permisos para ver esta página.</p>
+          <Link href="/">
+            <Button variant="outline" className="bg-transparent">Volver al inicio</Button>
+          </Link>
+        </div>
+      </div>
+    )
+  }
 
   const handleRunJob = async (jobId: string) => {
     try {

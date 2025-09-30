@@ -1,87 +1,56 @@
 "use client"
 
 import type React from "react"
-import { createContext, useContext, useEffect, useState } from "react"
-import type { User } from "@/lib/auth"
+import { createContext, useContext, useMemo } from "react"
+import { SessionProvider, signIn, signOut, useSession } from "next-auth/react"
+
+export interface AppUser {
+  id?: string
+  name?: string | null
+  email?: string | null
+  role?: "admin" | "user"
+}
 
 interface AuthContextType {
-  user: User | null
+  user: AppUser | null
   loading: boolean
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
+  loginWithGoogle: () => Promise<void>
   logout: () => Promise<void>
-  isOwner: boolean
-  isWorker: boolean
+  isAdmin: boolean
+  isUser: boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
+function InnerAuthProvider({ children }: { children: React.ReactNode }) {
+  const { data: session, status } = useSession()
 
-  // Check for existing session on mount
-  useEffect(() => {
-    checkSession()
-  }, [])
-
-  const checkSession = async () => {
-    try {
-      const response = await fetch("/api/auth/session")
-      if (response.ok) {
-        const data = await response.json()
-        setUser(data.user)
-      }
-    } catch (error) {
-      console.error("Session check failed:", error)
-    } finally {
-      setLoading(false)
+  const value = useMemo<AuthContextType>(() => {
+    const user = (session?.user as AppUser) || null
+    const role = user?.role || "user"
+    return {
+      user,
+      loading: status === "loading",
+      loginWithGoogle: async () => {
+        await signIn("google")
+      },
+      logout: async () => {
+        await signOut({ callbackUrl: "/" })
+      },
+      isAdmin: role === "admin",
+      isUser: role === "user",
     }
-  }
-
-  const login = async (email: string, password: string) => {
-    try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      })
-
-      const data = await response.json()
-
-      if (data.success) {
-        setUser(data.user)
-        return { success: true }
-      } else {
-        return { success: false, error: data.error || "Login failed" }
-      }
-    } catch (error) {
-      return { success: false, error: "Network error" }
-    }
-  }
-
-  const logout = async () => {
-    try {
-      await fetch("/api/auth/logout", { method: "POST" })
-      setUser(null)
-    } catch (error) {
-      console.error("Logout failed:", error)
-      // Still clear user state even if API call fails
-      setUser(null)
-    }
-  }
-
-  const value = {
-    user,
-    loading,
-    login,
-    logout,
-    isOwner: user?.role === "owner",
-    isWorker: user?.role === "worker",
-  }
+  }, [session, status])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+}
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  return (
+    <SessionProvider>
+      <InnerAuthProvider>{children}</InnerAuthProvider>
+    </SessionProvider>
+  )
 }
 
 export function useAuth() {

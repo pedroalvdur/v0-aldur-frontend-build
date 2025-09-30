@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { LogOut, Settings, User } from "lucide-react"
+import { useAuth } from "@/contexts/auth-context"
 
 interface HeaderProps {
   title: string
@@ -17,10 +18,7 @@ interface HeaderProps {
 }
 
 export function Header({ title, subtitle }: HeaderProps) {
-  const handleLogout = () => {
-    // TODO: Implement logout logic
-    console.log("Logout clicked")
-  }
+  const { logout } = useAuth()
 
   const handleSettings = () => {
     // TODO: Implement settings navigation
@@ -54,7 +52,7 @@ export function Header({ title, subtitle }: HeaderProps) {
                 <span>Perfil</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout}>
+              <DropdownMenuItem onClick={() => logout()}>
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Cerrar sesión</span>
               </DropdownMenuItem>

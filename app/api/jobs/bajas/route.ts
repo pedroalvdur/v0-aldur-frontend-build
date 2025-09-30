@@ -1,7 +1,15 @@
 import { NextResponse } from "next/server"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth-options"
+import { hasPermission } from "@/lib/permissions"
 
 export async function POST() {
   try {
+    const session = await getServerSession(authOptions)
+    const user = session?.user as { role?: "admin" | "user" } | undefined
+    if (!user || !hasPermission({ role: user.role }, "jobs:execute")) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
     // TODO: Implement actual Bajas job execution
     // This would typically involve:
     // 1. Validating permissions/authentication
@@ -65,7 +73,12 @@ export async function POST() {
 
 export async function GET() {
   try {
-    // TODO: Implement job status retrieval
+    // TODO: Implement job status retrieval, guard allows viewing only for admin
+    const session = await getServerSession(authOptions)
+    const user = session?.user as { role?: "admin" | "user" } | undefined
+    if (!user || !hasPermission({ role: user.role }, "jobs:view")) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
 
     const status = {
       jobId: "bajas",
