@@ -78,9 +78,8 @@
 }
 
 @theme inline {
-  /* Updated font variables to match new font imports */
-  --font-sans: var(--font-inter);
-  --font-mono: var(--font-jetbrains-mono);
+  /* Removed font variable references that were causing the error */
+  /* Fonts are applied via className in layout.tsx */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
