@@ -12,13 +12,13 @@ importers:
         specifier: latest
         version: 0.40.0(nodemailer@7.0.6)
       '@auth/neon-adapter':
-        specifier: latest
+        specifier: 1.10.0
         version: 1.10.0(nodemailer@7.0.6)
       '@hookform/resolvers':
         specifier: ^3.10.0
         version: 3.10.0(react-hook-form@7.60.0(react@18.0.0))
       '@neondatabase/serverless':
-        specifier: latest
+        specifier: 1.0.2
         version: 1.0.2
       '@radix-ui/react-accordion':
         specifier: 1.2.2
@@ -141,7 +141,7 @@ importers:
         specifier: latest
         version: 0.4.6(react-dom@18.0.0(react@18.0.0))(react@18.0.0)
       nodemailer:
-        specifier: latest
+        specifier: 7.0.6
         version: 7.0.6
       react:
         specifier: ^18
@@ -3008,7 +3008,7 @@ snapshots:
 
   '@types/pg@8.11.6':
     dependencies:
-      '@types/node': 22.0.0
+      '@types/node': 22.18.7
       pg-protocol: 1.10.3
       pg-types: 4.1.0
 
