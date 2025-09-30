@@ -1,23 +1,29 @@
+import { auth } from "@/auth"
 import { NextResponse } from "next/server"
-import type { NextRequest } from "next/server"
-import { getToken } from "next-auth/jwt"
 
-export async function middleware(req: NextRequest) {
-  // Get the token from the request
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
+export default auth((req) => {
+  const { pathname } = req.nextUrl
+  const isLoggedIn = !!req.auth
 
-  // If no token, redirect to login
-  if (!token) {
+  // Protected routes
+  const protectedRoutes = ["/chat", "/jobs"]
+  const isProtectedRoute = protectedRoutes.some((route) => pathname.startsWith(route))
+
+  // Redirect to login if accessing protected route without auth
+  if (isProtectedRoute && !isLoggedIn) {
     const loginUrl = new URL("/login", req.url)
-    loginUrl.searchParams.set("callbackUrl", req.url)
+    loginUrl.searchParams.set("callbackUrl", pathname)
     return NextResponse.redirect(loginUrl)
   }
 
-  // User is authenticated, continue
-  return NextResponse.next()
-}
+  // Redirect to chat if accessing login while already authenticated
+  if (pathname === "/login" && isLoggedIn) {
+    return NextResponse.redirect(new URL("/chat", req.url))
+  }
 
-// Protect these routes
+  return NextResponse.next()
+})
+
 export const config = {
-  matcher: ["/chat/:path*", "/jobs/:path*", "/api/chat/:path*", "/api/jobs/:path*"],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|public).*)"],
 }

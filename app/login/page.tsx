@@ -8,36 +8,68 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Mail } from "lucide-react"
+import { useSearchParams } from "next/navigation"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState("")
+  const [isSubmitted, setIsSubmitted] = useState(false)
+  const searchParams = useSearchParams()
+  const callbackUrl = searchParams.get("callbackUrl") || "/chat"
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    setError("")
 
     try {
       const result = await signIn("email", {
         email,
+        callbackUrl,
         redirect: false,
-        callbackUrl: "/chat",
       })
 
       if (result?.error) {
-        setError("Error al enviar el enlace mágico. Verifica tu correo electrónico.")
+        console.error("Error al iniciar sesión:", result.error)
+        alert("Error al enviar el enlace mágico. Por favor, verifica tu correo electrónico.")
       } else {
-        // Success - user will be redirected to verify page
+        setIsSubmitted(true)
       }
-    } catch (err) {
-      setError("Ocurrió un error. Por favor intenta de nuevo.")
+    } catch (error) {
+      console.error("Error:", error)
+      alert("Ocurrió un error. Por favor, intenta de nuevo.")
     } finally {
       setIsLoading(false)
     }
+  }
+
+  if (isSubmitted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl font-bold">Revisa tu correo</CardTitle>
+            <CardDescription>Te hemos enviado un enlace mágico para iniciar sesión</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="text-center text-sm text-muted-foreground">
+              <p>Hemos enviado un enlace de inicio de sesión a:</p>
+              <p className="font-medium text-foreground mt-2">{email}</p>
+              <p className="mt-4">Haz clic en el enlace del correo para acceder a tu cuenta.</p>
+            </div>
+            <Button
+              variant="outline"
+              className="w-full bg-transparent"
+              onClick={() => {
+                setIsSubmitted(false)
+                setEmail("")
+              }}
+            >
+              Usar otro correo
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (
@@ -45,15 +77,9 @@ export default function LoginPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">Aldur Adeslas</CardTitle>
-          <CardDescription>Accede con tu correo electrónico</CardDescription>
+          <CardDescription>Inicia sesión con tu correo electrónico</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
           <form onSubmit={handleEmailLogin} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Correo electrónico</Label>
@@ -68,20 +94,13 @@ export default function LoginPage() {
               />
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? (
-                <>Enviando...</>
-              ) : (
-                <>
-                  <Mail className="w-4 h-4 mr-2" />
-                  Enviar enlace mágico
-                </>
-              )}
+              {isLoading ? "Enviando..." : "Enviar enlace mágico"}
             </Button>
           </form>
 
-          <p className="text-xs text-center text-muted-foreground">
-            Te enviaremos un enlace de acceso seguro a tu correo electrónico
-          </p>
+          <div className="text-center text-xs text-muted-foreground">
+            <p>Te enviaremos un enlace seguro para iniciar sesión sin contraseña.</p>
+          </div>
         </CardContent>
       </Card>
     </div>

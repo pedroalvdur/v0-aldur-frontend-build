@@ -10,7 +10,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { LogOut, Settings, User } from "lucide-react"
-import { signOut, useSession } from "next-auth/react"
 
 interface HeaderProps {
   title: string
@@ -18,22 +17,14 @@ interface HeaderProps {
 }
 
 export function Header({ title, subtitle }: HeaderProps) {
-  const { data: session } = useSession()
-
-  const handleLogout = async () => {
-    await signOut({ callbackUrl: "/" })
+  const handleLogout = () => {
+    // TODO: Implement logout logic
+    console.log("Logout clicked")
   }
 
   const handleSettings = () => {
     // TODO: Implement settings navigation
     console.log("Settings clicked")
-  }
-
-  const getUserInitials = () => {
-    if (session?.user?.email) {
-      return session.user.email.charAt(0).toUpperCase()
-    }
-    return "U"
   }
 
   return (
@@ -45,15 +36,11 @@ export function Header({ title, subtitle }: HeaderProps) {
         </div>
 
         <div className="flex items-center gap-4">
-          {session?.user?.email && (
-            <span className="text-sm text-muted-foreground hidden sm:inline">{session.user.email}</span>
-          )}
-
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                 <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-primary text-primary-foreground">{getUserInitials()}</AvatarFallback>
+                  <AvatarFallback className="bg-primary text-primary-foreground">U</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>

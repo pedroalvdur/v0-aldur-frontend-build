@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { MessageSquare, Settings, LogOut, X } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { signOut, useSession } from "next-auth/react"
 
 interface SidebarProps {
   onClose?: () => void
@@ -12,6 +13,7 @@ interface SidebarProps {
 
 export function Sidebar({ onClose }: SidebarProps) {
   const pathname = usePathname()
+  const { data: session } = useSession()
 
   const navigation = [
     {
@@ -69,13 +71,17 @@ export function Sidebar({ onClose }: SidebarProps) {
       </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t border-sidebar-border">
+      <div className="p-4 border-t border-sidebar-border space-y-3">
+        {session?.user?.email && (
+          <div className="px-2 py-1">
+            <p className="text-xs text-sidebar-foreground/70 truncate">{session.user.email}</p>
+          </div>
+        )}
         <Button
           variant="ghost"
           className="w-full justify-start gap-2 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
           onClick={() => {
-            // TODO: Implement logout
-            console.log("Logout clicked")
+            signOut({ callbackUrl: "/" })
             onClose?.()
           }}
         >

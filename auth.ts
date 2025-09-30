@@ -1,11 +1,15 @@
-import { PrismaAdapter } from "@auth/prisma-adapter"
-import type { NextAuthOptions } from "next-auth"
+import NextAuth from "next-auth"
+import { NeonAdapter } from "@auth/neon-adapter"
 import EmailProvider from "next-auth/providers/email"
-import { isEmailAllowed } from "./email-whitelist"
-import { prisma } from "./prisma"
+import { neon } from "@neondatabase/serverless"
 
-export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
+const sql = neon(process.env.DATABASE_URL!)
+
+// Whitelist of allowed emails
+const ALLOWED_EMAILS = process.env.ALLOWED_EMAILS?.split(",").map((email) => email.trim()) || ["aldurbot@gmail.com"]
+
+export const { handlers, signIn, signOut, auth } = NextAuth({
+  adapter: NeonAdapter(sql),
   providers: [
     EmailProvider({
       server: {
@@ -21,20 +25,20 @@ export const authOptions: NextAuthOptions = {
   ],
   pages: {
     signIn: "/login",
-    verifyRequest: "/login/verify",
-    error: "/login/error",
+    verifyRequest: "/verify-request",
+    error: "/auth/error",
   },
   callbacks: {
     async signIn({ user }) {
-      const allowed = isEmailAllowed(user.email)
-
-      if (!allowed) {
-        console.warn(`[Auth] Blocked sign-in attempt from non-whitelisted email: ${user.email}`)
+      // Check if email is in whitelist
+      if (user.email && ALLOWED_EMAILS.includes(user.email)) {
+        return true
       }
-
-      return allowed
+      // Reject sign-in if email is not whitelisted
+      return false
     },
     async session({ session, user }) {
+      // Add user id to session
       if (session.user) {
         session.user.id = user.id
       }
@@ -45,5 +49,4 @@ export const authOptions: NextAuthOptions = {
     strategy: "database",
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
-  debug: process.env.NODE_ENV === "development",
-}
+})
