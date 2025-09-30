@@ -5,27 +5,11 @@ import { ArrowRight } from "lucide-react"
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center">
-              <h2 className="text-xl font-semibold text-foreground">Aldur</h2>
-            </div>
-            <Link href="/login">
-              <Button variant="outline" size="sm">
-                Iniciar Sesión
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </header>
-
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] py-20">
+        <div className="flex flex-col items-center justify-center min-h-screen py-20">
           <div className="text-center space-y-8 max-w-4xl">
-            {/* Main headline */}
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-foreground leading-tight text-balance">
-              Herramienta de operaciones internas
+              Aldur Adeslas
             </h1>
 
             {/* Subheadline */}
