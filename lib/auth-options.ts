@@ -19,18 +19,43 @@ function envList(name: string): string[] {
     .filter(Boolean)
 }
 
+function validateEnvVars() {
+  const required = {
+    GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
+    GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
+    NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
+  }
+
+  const missing = Object.entries(required)
+    .filter(([_, value]) => !value)
+    .map(([key]) => key)
+
+  if (missing.length > 0) {
+    console.error("[NextAuth] Missing required environment variables:", missing.join(", "))
+    return false
+  }
+  return true
+}
+
+export const isAuthConfigured = validateEnvVars()
+
 export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID || "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+      clientId: process.env.GOOGLE_CLIENT_ID || "dummy-client-id",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "dummy-client-secret",
       allowDangerousEmailAccountLinking: true,
     }),
   ],
   session: { strategy: "jwt" },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET || "development-secret-change-in-production",
   callbacks: {
     async signIn({ user }) {
+      if (!isAuthConfigured) {
+        console.error("[NextAuth] Sign-in blocked: missing environment variables")
+        return false
+      }
+
       const email = normalizeEmail(user?.email)
 
       // Build allowlists from env + test entries
@@ -63,5 +88,3 @@ export const authOptions: NextAuthOptions = {
 }
 
 export type AppRole = "admin" | "user"
-
-

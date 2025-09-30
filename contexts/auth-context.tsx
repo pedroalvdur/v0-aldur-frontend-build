@@ -18,6 +18,7 @@ interface AuthContextType {
   logout: () => Promise<void>
   isAdmin: boolean
   isUser: boolean
+  error: string | null
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -28,17 +29,35 @@ function InnerAuthProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<AuthContextType>(() => {
     const user = (session?.user as AppUser) || null
     const role = user?.role || "user"
+
+    let error: string | null = null
+    if (status === "unauthenticated" && typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search)
+      if (urlParams.get("error")) {
+        error = "Authentication failed. Please check your credentials or contact support."
+      }
+    }
+
     return {
       user,
       loading: status === "loading",
       loginWithGoogle: async () => {
-        await signIn("google")
+        try {
+          await signIn("google", { callbackUrl: "/" })
+        } catch (err) {
+          console.error("[Auth] Sign-in error:", err)
+        }
       },
       logout: async () => {
-        await signOut({ callbackUrl: "/" })
+        try {
+          await signOut({ callbackUrl: "/" })
+        } catch (err) {
+          console.error("[Auth] Sign-out error:", err)
+        }
       },
       isAdmin: role === "admin",
       isUser: role === "user",
+      error,
     }
   }, [session, status])
 
